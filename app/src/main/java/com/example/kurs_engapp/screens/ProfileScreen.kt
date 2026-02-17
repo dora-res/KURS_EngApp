@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kurs_engapp.R
 import com.example.kurs_engapp.viewmodel.ProfileViewModel
 
 @Composable
@@ -117,7 +117,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
         ) {
             // Исправленная строка - добавьте нужный drawable ID
             Icon(
-                painter = painterResource(id = R.drawable.ic_students), // Замените на ваш drawable
+                painter = painterResource(id = R.drawable.students_basic), // Замените на ваш drawable
                 contentDescription = "Ученики",
                 tint = Color.White,
                 modifier = Modifier.size(32.dp)
