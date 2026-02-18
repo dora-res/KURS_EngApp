@@ -190,37 +190,35 @@ fun EditTutorProfileScreen(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onCancel) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_cancel_changes),
-                    contentDescription = "Отмена",
-                    tint = Color(0xFFA58AEF),
-                    modifier = Modifier.size(56.dp)
-                )
-            }
+            Icon(
+                painter = painterResource(id = R.drawable.cancel_basic),
+                contentDescription = "Отмена",
+                tint = Color(0xFF9F82F0),
+                modifier = Modifier
+                    .size(56.dp)
+                    .clickable(onClick = onCancel)
+            )
 
-            IconButton(
-                onClick = {
-                    onSave(
-                        TutorProfile(
-                            firstName = firstName,
-                            lastName = lastName,
-                            middleName = middleName,
-                            subject = subject,
-                            experience = experience,
-                            level = normalizedLevel(level),
-                            avatarUri = avatarUri
+            Icon(
+                painter = painterResource(id = R.drawable.yes_basic),
+                contentDescription = "Сохранить",
+                tint = Color(0xFF9F82F0),
+                modifier = Modifier
+                    .size(56.dp)
+                    .clickable {
+                        onSave(
+                            TutorProfile(
+                                firstName = firstName,
+                                lastName = lastName,
+                                middleName = middleName,
+                                subject = subject,
+                                experience = experience,
+                                level = normalizedLevel(level),
+                                avatarUri = avatarUri
+                            )
                         )
-                    )
-                }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_save_changes),
-                    contentDescription = "Сохранить",
-                    tint = Color(0xFFA58AEF),
-                    modifier = Modifier.size(56.dp)
-                )
-            }
+                    }
+            )
         }
     }
 }
