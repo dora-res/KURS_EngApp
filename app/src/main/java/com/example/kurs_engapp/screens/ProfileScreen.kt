@@ -1,6 +1,7 @@
 package com.example.kurs_engapp.screens
 
 import android.net.Uri
+import android.content.Intent
 import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,17 +52,22 @@ import com.example.kurs_engapp.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel) {
     val profile by viewModel.profile.collectAsState()
+    val selectedPhotoUri by viewModel.selectedPhotoUri.collectAsState()
     val context = LocalContext.current
 
-    // TODO: заменить на FontFamily(Font(R.font.gropled)), когда файл шрифта будет добавлен в проект.
-    val gropledFont = R.font.gropled_bold
-
-    var selectedPhotoUri by remember { mutableStateOf<Uri?>(null) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        selectedPhotoUri = uri
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+        viewModel.onPhotoSelected(uri)
     }
+
+    val openPhotoPicker = { photoPickerLauncher.launch(arrayOf("image/*")) }
 
     Column(
         modifier = Modifier
@@ -74,12 +82,15 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     brush = Brush.verticalGradient(
                         colors = listOf(Color(0xFF4811BF), Color.Transparent),
                         startY = -220f,
-                        endY = 220f
+                        endY = 300f
                     )
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 100.dp)
+            ) {
                 Text(
                     text = "Репетитор",
                     fontSize = 62.sp,
@@ -111,14 +122,15 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 .padding(6.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFF4F4F4))
-                .clickable { photoPickerLauncher.launch("image/*") },
+                .clickable { openPhotoPicker() },
             contentAlignment = Alignment.Center
         ) {
             if (selectedPhotoUri == null) {
-                Text(
-                    text = "фото",
-                    fontSize = 20.sp,
-                    color = Color.Black
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Фото профиля по умолчанию",
+                    tint = Color(0xFF9F82F0),
+                    modifier = Modifier.size(84.dp)
                 )
             } else {
                 AndroidView(
@@ -128,7 +140,9 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                         }
                     },
                     update = { imageView -> imageView.setImageURI(selectedPhotoUri) },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { openPhotoPicker() }
                 )
             }
         }
@@ -204,27 +218,12 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     .background(Color(0xFFA58AEF)),
                 contentAlignment = Alignment.Center
             ) {
-                if (selectedPhotoUri == null) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Изображение",
-                        tint = Color(0xFF4811BF),
-                        modifier = Modifier.size(40.dp)
-                    )
-                } else {
-                    AndroidView(
-                        factory = {
-                            ImageView(context).apply {
-                                scaleType = ImageView.ScaleType.CENTER_CROP
-                                clipToOutline = true
-                            }
-                        },
-                        update = { imageView -> imageView.setImageURI(selectedPhotoUri) },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(18.dp))
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Редактирование",
+                    tint = Color(0xFF4811BF),
+                    modifier = Modifier.size(40.dp)
+                )
             }
 
             Icon(
