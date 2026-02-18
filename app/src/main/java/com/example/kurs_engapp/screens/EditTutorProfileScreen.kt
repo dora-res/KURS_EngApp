@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,13 +18,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -43,10 +46,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.kurs_engapp.R
 import com.example.kurs_engapp.model.TutorProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+private val allowedLevels = listOf("A1", "A2", "B1", "B2", "C1", "C2", "Носитель")
 
 @Composable
 fun EditTutorProfileScreen(
@@ -60,8 +67,8 @@ fun EditTutorProfileScreen(
     var lastName by remember(profile) { mutableStateOf(profile.lastName) }
     var middleName by remember(profile) { mutableStateOf(profile.middleName) }
     var subject by remember(profile) { mutableStateOf(profile.subject) }
-    var experience by remember(profile) { mutableStateOf(profile.experience) }
-    var level by remember(profile) { mutableStateOf(profile.level) }
+    var experience by remember(profile) { mutableStateOf(profile.experience.filter(Char::isDigit)) }
+    var level by remember(profile) { mutableStateOf(normalizedLevel(profile.level)) }
     var avatarUri by remember(profile) { mutableStateOf(profile.avatarUri) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -81,69 +88,97 @@ fun EditTutorProfileScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF4F4F4))
-            .padding(horizontal = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(72.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFF4811BF), Color.Transparent),
+                        startY = -120f,
+                        endY = 220f
+                    )
+                )
+        )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Bottom
+        Spacer(modifier = Modifier.height(0.dp))
+
+        Column(
+            modifier = Modifier.offset(y = (-12).dp)
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(180.dp)
-                    .border(
-                        width = 5.dp,
-                        brush = Brush.linearGradient(colors = listOf(Color(0xFF9F82F0), Color(0xFF4811BF))),
-                        shape = CircleShape
-                    )
-                    .clip(CircleShape)
-                    .background(Color(0xFFF4F4F4)),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (avatarBitmap == null) {
+                Box(
+                    modifier = Modifier
+                        .size(180.dp)
+                        .border(
+                            width = 5.dp,
+                            brush = Brush.linearGradient(colors = listOf(Color(0xFF9F82F0), Color(0xFF4811BF))),
+                            shape = CircleShape
+                        )
+                        .clip(CircleShape)
+                        .background(Color(0xFFF4F4F4)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (avatarBitmap == null) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Пустой аватар",
+                            tint = Color(0xFF9F82F0),
+                            modifier = Modifier.size(84.dp)
+                        )
+                    } else {
+                        Image(
+                            bitmap = avatarBitmap!!.asImageBitmap(),
+                            contentDescription = "Аватар",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                IconButton(
+                    onClick = { photoPickerLauncher.launch("image/*") },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x1A4811BF))
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Пустой аватар",
-                        tint = Color(0xFF9F82F0),
-                        modifier = Modifier.size(84.dp)
-                    )
-                } else {
-                    Image(
-                        bitmap = avatarBitmap!!.asImageBitmap(),
-                        contentDescription = "Аватар",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        painter = painterResource(id = R.drawable.ic_upload_avatar),
+                        contentDescription = "Загрузить аватар",
+                        tint = Color(0xFF4811BF),
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
-            IconButton(
-                onClick = { photoPickerLauncher.launch("image/*") },
-                modifier = Modifier
-                    .padding(start = 16.dp, bottom = 12.dp)
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x1A4811BF))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Download,
-                    contentDescription = "Загрузить аватар",
-                    tint = Color(0xFF4811BF),
-                    modifier = Modifier.size(32.dp)
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                ProfileTextField(value = firstName, onValueChange = { firstName = it }, hint = "Имя")
+                ProfileTextField(value = lastName, onValueChange = { lastName = it }, hint = "Фамилия")
+                ProfileTextField(value = middleName, onValueChange = { middleName = it }, hint = "Отчество")
+                ProfileTextField(value = subject, onValueChange = { subject = it }, hint = "Специализация")
+                ProfileTextField(
+                    value = experience,
+                    onValueChange = { input -> experience = input.filter(Char::isDigit) },
+                    hint = "Стаж"
+                )
+                LevelDropdownField(
+                    value = level,
+                    onValueChange = { level = it }
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        ProfileTextField(value = firstName, onValueChange = { firstName = it }, label = "Имя")
-        ProfileTextField(value = lastName, onValueChange = { lastName = it }, label = "Фамилия")
-        ProfileTextField(value = middleName, onValueChange = { middleName = it }, label = "Отчество")
-        ProfileTextField(value = subject, onValueChange = { subject = it }, label = "Специализация")
-        ProfileTextField(value = experience, onValueChange = { experience = it }, label = "Стаж")
-        ProfileTextField(value = level, onValueChange = { level = it }, label = "Уровень")
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -157,7 +192,7 @@ fun EditTutorProfileScreen(
         ) {
             IconButton(onClick = onCancel) {
                 Icon(
-                    imageVector = Icons.Default.Clear,
+                    painter = painterResource(id = R.drawable.ic_cancel_changes),
                     contentDescription = "Отмена",
                     tint = Color(0xFFA58AEF),
                     modifier = Modifier.size(56.dp)
@@ -173,17 +208,80 @@ fun EditTutorProfileScreen(
                             middleName = middleName,
                             subject = subject,
                             experience = experience,
-                            level = level,
+                            level = normalizedLevel(level),
                             avatarUri = avatarUri
                         )
                     )
                 }
             ) {
                 Icon(
-                    imageVector = Icons.Default.Check,
+                    painter = painterResource(id = R.drawable.ic_save_changes),
                     contentDescription = "Сохранить",
                     tint = Color(0xFFA58AEF),
                     modifier = Modifier.size(56.dp)
+                )
+            }
+        }
+    }
+}
+
+private fun normalizedLevel(input: String): String {
+    return allowedLevels.firstOrNull { it.equals(input, ignoreCase = true) } ?: allowedLevels.first()
+}
+
+@Composable
+private fun LevelDropdownField(
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp)
+            .clickable { expanded = true }
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFA58AEF),
+                unfocusedContainerColor = Color(0xFFA58AEF),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                focusedTextColor = Color(0xFF4811BF),
+                unfocusedTextColor = Color(0xFF4811BF),
+                focusedPlaceholderColor = Color(0xFF6A35DF),
+                unfocusedPlaceholderColor = Color(0xFF6A35DF)
+            ),
+            placeholder = { Text("Уровень") },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Выбрать уровень",
+                    tint = Color(0xFF4811BF)
+                )
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            allowedLevels.forEach { level ->
+                DropdownMenuItem(
+                    text = { Text(level) },
+                    onClick = {
+                        onValueChange(level)
+                        expanded = false
+                    }
                 )
             }
         }
@@ -194,7 +292,7 @@ fun EditTutorProfileScreen(
 private fun ProfileTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String
+    hint: String
 ) {
     OutlinedTextField(
         value = value,
@@ -211,9 +309,9 @@ private fun ProfileTextField(
             unfocusedBorderColor = Color.Transparent,
             focusedTextColor = Color(0xFF4811BF),
             unfocusedTextColor = Color(0xFF4811BF),
-            focusedLabelColor = Color(0xFF6A35DF),
-            unfocusedLabelColor = Color(0xFF6A35DF)
+            focusedPlaceholderColor = Color(0xFF6A35DF),
+            unfocusedPlaceholderColor = Color(0xFF6A35DF)
         ),
-        label = { Text(label) }
+        placeholder = { Text(hint) }
     )
 }
