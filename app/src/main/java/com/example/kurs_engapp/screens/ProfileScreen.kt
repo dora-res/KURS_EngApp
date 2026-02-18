@@ -1,10 +1,14 @@
 package com.example.kurs_engapp.screens
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.content.Intent
 import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,16 +32,20 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -48,6 +56,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.kurs_engapp.R
 import com.example.kurs_engapp.viewmodel.ProfileViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileInputStream
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel) {
@@ -56,18 +68,25 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     val context = LocalContext.current
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        }
-        viewModel.onPhotoSelected(uri)
+        val savedPhotoUri = uri?.let { copyPhotoToAppStorage(context, it) }
+        viewModel.onPhotoSelected(savedPhotoUri)
     }
 
-    val openPhotoPicker = { photoPickerLauncher.launch(arrayOf("image/*")) }
+    val openPhotoPicker = { photoPickerLauncher.launch("image/*") }
+
+    val avatarBitmap by produceState<Bitmap?>(initialValue = null, key1 = selectedPhotoUri) {
+        value = withContext(Dispatchers.IO) {
+            selectedPhotoUri?.let { loadAvatarBitmap(context, it) }
+    }
+}
+
+    LaunchedEffect(selectedPhotoUri, avatarBitmap) {
+        if (selectedPhotoUri != null && avatarBitmap == null) {
+            viewModel.onPhotoSelected(null)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -125,7 +144,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 .clickable { openPhotoPicker() },
             contentAlignment = Alignment.Center
         ) {
-            if (selectedPhotoUri == null) {
+            if (avatarBitmap == null) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Фото профиля по умолчанию",
@@ -133,21 +152,20 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     modifier = Modifier.size(84.dp)
                 )
             } else {
-                AndroidView(
-                    factory = {
-                        ImageView(context).apply {
-                            scaleType = ImageView.ScaleType.CENTER_CROP
-                        }
-                    },
-                    update = { imageView -> imageView.setImageURI(selectedPhotoUri) },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable { openPhotoPicker() }
-                )
+                avatarBitmap?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Фото профиля",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable { openPhotoPicker() },
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         Text(
             text = "${profile.lastName} ${profile.firstName}\n${profile.middleName}",
@@ -177,26 +195,26 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 26.dp),
-                horizontalAlignment = Alignment.Start
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = profile.subject,
                     fontSize = 20.sp,
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Left
+                    textAlign = TextAlign.Start
                 )
                 Text(
                     text = "Стаж ${profile.experience} лет",
                     fontSize = 20.sp,
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Left
+                    textAlign = TextAlign.Start
                 )
                 Text(
                     text = "Уровень ${profile.level}",
                     fontSize = 20.sp,
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Left
+                    textAlign = TextAlign.Start
                 )
             }
         }
@@ -234,4 +252,40 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
             )
         }
     }
+}
+
+private fun copyPhotoToAppStorage(context: Context, sourceUri: Uri): Uri? {
+    return runCatching {
+        val destinationFile = File(context.filesDir, "profile_avatar.jpg")
+        context.contentResolver.openInputStream(sourceUri)?.use { input ->
+            destinationFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        } ?: return null
+
+        Uri.fromFile(destinationFile)
+    }.getOrNull()
+}
+
+private fun loadAvatarBitmap(context: Context, sourceUri: Uri): Bitmap? {
+    return runCatching {
+        val decodeOptions = BitmapFactory.Options().apply {
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+
+        when (sourceUri.scheme) {
+            "file" -> {
+                val filePath = sourceUri.path ?: return@runCatching null
+                FileInputStream(filePath).use { input ->
+                    BitmapFactory.decodeStream(input, null, decodeOptions)
+                }
+            }
+
+            else -> {
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    BitmapFactory.decodeStream(input, null, decodeOptions)
+                }
+            }
+        }
+    }.getOrNull()
 }
