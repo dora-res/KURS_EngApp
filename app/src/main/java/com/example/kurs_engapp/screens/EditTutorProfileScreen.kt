@@ -111,16 +111,16 @@ fun EditTutorProfileScreen(
         Column(
             modifier = Modifier.offset(y = (-12).dp)
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
                         .size(180.dp)
+                        .clickable { photoPickerLauncher.launch("image/*") }
                         .border(
                             width = 5.dp,
                             brush = Brush.linearGradient(colors = listOf(Color(0xFF9F82F0), Color(0xFF4811BF))),
@@ -147,22 +147,6 @@ fun EditTutorProfileScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                IconButton(
-                    onClick = { photoPickerLauncher.launch("image/*") },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x1A4811BF))
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_upload_avatar),
-                        contentDescription = "Загрузить аватар",
-                        tint = Color(0xFF4811BF),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
