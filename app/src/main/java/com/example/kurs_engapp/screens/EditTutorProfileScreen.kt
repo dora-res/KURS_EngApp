@@ -25,16 +25,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+//import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -228,17 +232,19 @@ private fun normalizedLevel(input: String): String {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun LevelDropdownField(
     value: String,
     onValueChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Box(
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 10.dp)
-            .clickable { expanded = true }
     ) {
         OutlinedTextField(
             value = value,
@@ -247,7 +253,8 @@ private fun LevelDropdownField(
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .menuAnchor(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = Color(0xFFA58AEF),
                 unfocusedContainerColor = Color(0xFFA58AEF),
@@ -259,19 +266,12 @@ private fun LevelDropdownField(
                 unfocusedPlaceholderColor = Color(0xFF6A35DF)
             ),
             placeholder = { Text("Уровень") },
-            trailingIcon = {
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Выбрать уровень",
-                    tint = Color(0xFF4811BF)
-                )
-            }
+
         )
 
-        DropdownMenu(
+        ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
         ) {
             allowedLevels.forEach { level ->
                 DropdownMenuItem(
