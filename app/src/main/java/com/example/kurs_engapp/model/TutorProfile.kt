@@ -5,6 +5,7 @@ data class TutorProfile(
     val lastName: String,
     val middleName: String,
     val subject: String,
-    val experience: Int,
-    val level: String
+    val experience: String,
+    val level: String,
+    val avatarUri: String?
 )

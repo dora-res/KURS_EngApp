@@ -4,10 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.content.Intent
-import android.widget.ImageView
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,12 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,43 +39,24 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.example.kurs_engapp.R
-import com.example.kurs_engapp.viewmodel.ProfileViewModel
+import com.example.kurs_engapp.model.TutorProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.io.FileInputStream
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel) {
-    val profile by viewModel.profile.collectAsState()
-    val selectedPhotoUri by viewModel.selectedPhotoUri.collectAsState()
+fun ProfileScreen(
+    profile: TutorProfile,
+    onEditClick: () -> Unit
+) {
     val context = LocalContext.current
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        val savedPhotoUri = uri?.let { copyPhotoToAppStorage(context, it) }
-        viewModel.onPhotoSelected(savedPhotoUri)
-    }
-
-    val openPhotoPicker = { photoPickerLauncher.launch("image/*") }
-
-    val avatarBitmap by produceState<Bitmap?>(initialValue = null, key1 = selectedPhotoUri) {
+    val avatarBitmap by produceState<Bitmap?>(initialValue = null, key1 = profile.avatarUri) {
         value = withContext(Dispatchers.IO) {
-            selectedPhotoUri?.let { loadAvatarBitmap(context, it) }
-    }
-}
-
-    LaunchedEffect(selectedPhotoUri, avatarBitmap) {
-        if (selectedPhotoUri != null && avatarBitmap == null) {
-            viewModel.onPhotoSelected(null)
+            profile.avatarUri?.let { loadAvatarBitmap(context, Uri.parse(it)) }
         }
     }
 
@@ -110,16 +82,8 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(top = 100.dp)
             ) {
-                Text(
-                    text = "Репетитор",
-                    fontSize = 62.sp,
-                    color = Color(0xFF4811BF)
-                )
-                Text(
-                    text = "это вы",
-                    fontSize = 26.sp,
-                    color = Color(0xFF8C6BE8)
-                )
+                Text(text = "Репетитор", fontSize = 62.sp, color = Color(0xFF4811BF))
+                Text(text = "это вы", fontSize = 26.sp, color = Color(0xFF8C6BE8))
             }
         }
 
@@ -137,11 +101,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     shape = CircleShape
                 )
                 .clip(CircleShape)
-                .background(Color(0xFFF4F4F4))
-                .padding(6.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFF4F4F4))
-                .clickable { openPhotoPicker() },
+                .background(Color(0xFFF4F4F4)),
             contentAlignment = Alignment.Center
         ) {
             if (avatarBitmap == null) {
@@ -152,16 +112,12 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     modifier = Modifier.size(84.dp)
                 )
             } else {
-                avatarBitmap?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Фото профиля",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable { openPhotoPicker() },
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                Image(
+                    bitmap = avatarBitmap!!.asImageBitmap(),
+                    contentDescription = "Фото профиля",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
         }
 
@@ -198,24 +154,13 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = profile.subject,
-                    fontSize = 20.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
+                Text(text = profile.subject, fontSize = 20.sp, modifier = Modifier.fillMaxWidth())
                 Text(
                     text = "Стаж ${profile.experience} лет",
                     fontSize = 20.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Text(
-                    text = "Уровень ${profile.level}",
-                    fontSize = 20.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
+                Text(text = "Уровень ${profile.level}", fontSize = 20.sp, modifier = Modifier.fillMaxWidth())
             }
         }
 
@@ -233,7 +178,8 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(Color(0xFFA58AEF)),
+                    .background(Color(0xFFA58AEF))
+                    .clickable(onClick = onEditClick),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -254,9 +200,9 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     }
 }
 
-private fun copyPhotoToAppStorage(context: Context, sourceUri: Uri): Uri? {
+internal fun copyPhotoToAppStorage(context: Context, sourceUri: Uri): Uri? {
     return runCatching {
-        val destinationFile = File(context.filesDir, "profile_avatar.jpg")
+        val destinationFile = java.io.File(context.filesDir, "profile_avatar.jpg")
         context.contentResolver.openInputStream(sourceUri)?.use { input ->
             destinationFile.outputStream().use { output ->
                 input.copyTo(output)
@@ -267,7 +213,7 @@ private fun copyPhotoToAppStorage(context: Context, sourceUri: Uri): Uri? {
     }.getOrNull()
 }
 
-private fun loadAvatarBitmap(context: Context, sourceUri: Uri): Bitmap? {
+internal fun loadAvatarBitmap(context: Context, sourceUri: Uri): Bitmap? {
     return runCatching {
         val decodeOptions = BitmapFactory.Options().apply {
             inPreferredConfig = Bitmap.Config.ARGB_8888

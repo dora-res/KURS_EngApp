@@ -7,6 +7,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -14,9 +19,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.example.kurs_engapp.data.AppDatabase
 import com.example.kurs_engapp.data.ProfileRepository
+import com.example.kurs_engapp.screens.EditTutorProfileScreen
 import com.example.kurs_engapp.screens.ProfileScreen
 import com.example.kurs_engapp.viewmodel.ProfileViewModel
 import com.example.kurs_engapp.viewmodel.ProfileViewModelFactory
+
+private enum class ScreenRoute {
+    Profile,
+    EditProfile
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,8 +38,10 @@ class MainActivity : ComponentActivity() {
             applicationContext,
             AppDatabase::class.java,
             "eng_app_database"
-        ).build()
-        val repository = ProfileRepository(database.profileAvatarDao())
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+        val repository = ProfileRepository(database.tutorProfileDao())
         val gropledFontFamily = FontFamily(Font(R.font.gropled_bold))
         val appTypography = Typography().run {
             Typography(
@@ -55,8 +68,25 @@ class MainActivity : ComponentActivity() {
                 val profileViewModel: ProfileViewModel = viewModel(
                     factory = ProfileViewModelFactory(repository)
                 )
+                val profile by profileViewModel.profile.collectAsState()
+                var currentScreen by rememberSaveable { mutableStateOf(ScreenRoute.Profile) }
+
                 MaterialTheme(typography = appTypography) {
-                    ProfileScreen(viewModel = profileViewModel)
+                    when (currentScreen) {
+                        ScreenRoute.Profile -> ProfileScreen(
+                            profile = profile,
+                            onEditClick = { currentScreen = ScreenRoute.EditProfile }
+                        )
+
+                        ScreenRoute.EditProfile -> EditTutorProfileScreen(
+                            profile = profile,
+                            onCancel = { currentScreen = ScreenRoute.Profile },
+                            onSave = { updatedProfile ->
+                                profileViewModel.saveProfile(updatedProfile)
+                                currentScreen = ScreenRoute.Profile
+                            }
+                        )
+                    }
                 }
             }
         }
