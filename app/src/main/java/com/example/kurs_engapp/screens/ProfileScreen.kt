@@ -51,7 +51,8 @@ import java.io.FileInputStream
 @Composable
 fun ProfileScreen(
     profile: TutorProfile,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onStudentsClick: () -> Unit
 ) {
     val context = LocalContext.current
     val avatarBitmap by produceState<Bitmap?>(initialValue = null, key1 = profile.avatarUri) {
@@ -194,7 +195,9 @@ fun ProfileScreen(
                 painter = painterResource(id = R.drawable.students_basic),
                 contentDescription = "Ученики",
                 tint = Color(0xFFA58AEF),
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier
+                    .size(64.dp)
+                    .clickable(onClick = onStudentsClick)
             )
         }
     }

@@ -21,12 +21,14 @@ import com.example.kurs_engapp.data.AppDatabase
 import com.example.kurs_engapp.data.ProfileRepository
 import com.example.kurs_engapp.screens.EditTutorProfileScreen
 import com.example.kurs_engapp.screens.ProfileScreen
+import com.example.kurs_engapp.screens.StudentsScreen
 import com.example.kurs_engapp.viewmodel.ProfileViewModel
 import com.example.kurs_engapp.viewmodel.ProfileViewModelFactory
 
 private enum class ScreenRoute {
     Profile,
-    EditProfile
+    EditProfile,
+    Students
 }
 
 class MainActivity : ComponentActivity() {
@@ -75,7 +77,8 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         ScreenRoute.Profile -> ProfileScreen(
                             profile = profile,
-                            onEditClick = { currentScreen = ScreenRoute.EditProfile }
+                            onEditClick = { currentScreen = ScreenRoute.EditProfile },
+                            onStudentsClick = {currentScreen = ScreenRoute.Students}
                         )
 
                         ScreenRoute.EditProfile -> EditTutorProfileScreen(
@@ -85,6 +88,11 @@ class MainActivity : ComponentActivity() {
                                 profileViewModel.saveProfile(updatedProfile)
                                 currentScreen = ScreenRoute.Profile
                             }
+                        )
+                        ScreenRoute.Students -> StudentsScreen(
+                            students = emptyList(),
+                            onProfileClick = { currentScreen = ScreenRoute.Profile },
+                            onAddStudentClick = { }
                         )
                     }
                 }

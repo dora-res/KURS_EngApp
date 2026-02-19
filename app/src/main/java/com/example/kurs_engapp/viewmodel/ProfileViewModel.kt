@@ -15,12 +15,12 @@ class ProfileViewModel(
 ) : ViewModel() {
 
     private val defaultProfile = TutorProfile(
-        firstName = "Иван",
-        lastName = "Иванов",
-        middleName = "Иванович",
-        subject = "Английский язык",
-        experience = "5",
-        level = "B2–C1",
+        firstName = "Имя",
+        lastName = "Фамилия",
+        middleName = "Отчество",
+        subject = "Специализация",
+        experience = "—",
+        level = "—",
         avatarUri = null
     )
 
@@ -34,3 +34,4 @@ class ProfileViewModel(
         }
     }
 }
+
