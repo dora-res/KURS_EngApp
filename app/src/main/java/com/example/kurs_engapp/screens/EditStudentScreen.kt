@@ -57,6 +57,8 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import androidx.compose.foundation.lazy.LazyColumn
+//import androidx.compose.foundation.lazy.item
 
 private val studentLevels = listOf("Нулевой", "A1", "A2", "B1", "B2", "C1", "C2", "Носитель")
 private val nameRegex = Regex("[A-Za-zА-Яа-яЁё]*")
@@ -148,61 +150,73 @@ fun EditStudentScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            StudentField(
-                value = firstName,
-                hint = "Имя",
-                onValueChange = { if (nameRegex.matches(it)) firstName = it }
-            )
-            StudentField(
-                value = lastName,
-                hint = "Фамилия",
-                onValueChange = { if (nameRegex.matches(it)) lastName = it }
-            )
-            StudentLevelDropdown(value = level, onValueChange = { level = it })
-            StudentField(value = goal, hint = "Цель", onValueChange = { goal = it })
-            StudentField(
-                value = phone,
-                hint = "Номер телефона",
-                keyboardType = KeyboardType.Phone,
-                onValueChange = { if (phoneRegex.matches(it)) phone = it }
-            )
-            StudentField(
-                value = lessonDateTimes.joinToString(" | ") { formatLessonForDisplay(it) },
-                hint = "Занятия",
-                readOnly = true,
-                onValueChange = {},
-                onClick = {
-                    val calendar = Calendar.getInstance()
-                    DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            TimePickerDialog(
-                                context,
-                                { _, hourOfDay, minute ->
-                                    val selectedLesson = "%02d.%02d.%04d %02d:%02d".format(
-                                        dayOfMonth,
-                                        month + 1,
-                                        year,
-                                        hourOfDay,
-                                        minute
-                                    )
-                                    lessonDateTimes = lessonDateTimes + selectedLesson
-                                },
-                                calendar.get(Calendar.HOUR_OF_DAY),
-                                calendar.get(Calendar.MINUTE),
-                                true
-                            ).show()
-                        },
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH),
-                        calendar.get(Calendar.DAY_OF_MONTH)
-                    ).show()
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 24.dp)
+        ) {
+            item {
+                StudentField(
+                    value = firstName,
+                    hint = "Имя",
+                    onValueChange = { if (nameRegex.matches(it)) firstName = it }
+                )
+                StudentField(
+                    value = lastName,
+                    hint = "Фамилия",
+                    onValueChange = { if (nameRegex.matches(it)) lastName = it }
+                )
+                StudentLevelDropdown(value = level, onValueChange = { level = it })
+                StudentField(value = goal, hint = "Цель", onValueChange = { goal = it })
+                StudentField(
+                    value = phone,
+                    hint = "Номер телефона",
+                    keyboardType = KeyboardType.Phone,
+                    onValueChange = { if (phoneRegex.matches(it)) phone = it }
+                )
+                StudentField(
+                    value = lessonDateTimes.joinToString(" | ") { formatLessonForDisplay(it) },
+                    hint = "Занятия",
+                    readOnly = true,
+                    onValueChange = {},
+                    onClick = {
+                        val calendar = Calendar.getInstance()
+                        DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                TimePickerDialog(
+                                    context,
+                                    { _, hourOfDay, minute ->
+                                        val selectedLesson = "%02d.%02d.%04d %02d:%02d".format(
+                                            dayOfMonth,
+                                            month + 1,
+                                            year,
+                                            hourOfDay,
+                                            minute
+                                        )
+                                        lessonDateTimes = lessonDateTimes + selectedLesson
+                                    },
+                                    calendar.get(Calendar.HOUR_OF_DAY),
+                                    calendar.get(Calendar.MINUTE),
+                                    true
+                                ).show()
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).show()
+                    }
+                )
+                if (lessonDateTimes.isNotEmpty()) {
+                    LessonDateTimesList(
+                        lessonDateTimes = lessonDateTimes,
+                        onRemoveLesson = { lessonToRemove ->
+                            lessonDateTimes = lessonDateTimes.filterNot { it == lessonToRemove }
+                        }
+                    )
                 }
-            )
+            }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
 
         Row(
             modifier = Modifier
@@ -244,6 +258,40 @@ fun EditStudentScreen(
         }
     }
 }
+
+@Composable
+private fun LessonDateTimesList(
+    lessonDateTimes: List<String>,
+    onRemoveLesson: (String) -> Unit
+) {
+    Column(modifier = Modifier.padding(bottom = 10.dp)) {
+        lessonDateTimes.forEach { lesson ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp)
+                    .background(Color(0xFFD6C6FF), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = formatLessonForDisplay(lesson),
+                    color = Color(0xFF4811BF)
+                )
+                Icon(
+                    painter = painterResource(id = R.drawable.trash_basic),
+                    contentDescription = "Удалить дату занятия",
+                    tint = Color(0xFF4811BF),
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clickable { onRemoveLesson(lesson) }
+                )
+            }
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
