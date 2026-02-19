@@ -21,4 +21,10 @@ class StudentsViewModel(
             repository.upsertStudent(student)
         }
     }
+
+    fun deleteStudent(student: Student) {
+        viewModelScope.launch {
+            repository.deleteStudent(student)
+        }
+    }
 }

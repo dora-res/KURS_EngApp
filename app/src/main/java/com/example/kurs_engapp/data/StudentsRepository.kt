@@ -13,6 +13,11 @@ class StudentsRepository(private val studentDao: StudentDao) {
     suspend fun upsertStudent(student: Student) {
         studentDao.upsert(student.toEntity())
     }
+
+    suspend fun deleteStudent(student: Student) {
+        studentDao.delete(student.toEntity())
+    }
+
 }
 
 private fun StudentEntity.toModel(): Student = Student(

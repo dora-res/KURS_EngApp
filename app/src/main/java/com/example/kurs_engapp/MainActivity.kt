@@ -25,6 +25,7 @@ import com.example.kurs_engapp.model.Student
 import com.example.kurs_engapp.screens.EditStudentScreen
 import com.example.kurs_engapp.screens.EditTutorProfileScreen
 import com.example.kurs_engapp.screens.ProfileScreen
+import com.example.kurs_engapp.screens.StudentDetailsScreen
 import com.example.kurs_engapp.screens.StudentsScreen
 import com.example.kurs_engapp.viewmodel.ProfileViewModel
 import com.example.kurs_engapp.viewmodel.ProfileViewModelFactory
@@ -35,6 +36,7 @@ private enum class ScreenRoute {
     Profile,
     EditProfile,
     Students,
+    StudentDetails,
     EditStudent
 }
 
@@ -84,6 +86,7 @@ class MainActivity : ComponentActivity() {
                 val profile by profileViewModel.profile.collectAsState()
                 val students by studentsViewModel.students.collectAsState()
                 var currentScreen by rememberSaveable { mutableStateOf(ScreenRoute.Profile) }
+                var selectedStudent by remember { mutableStateOf<Student?>(null) }
                 var editingStudent by remember { mutableStateOf<Student?>(null) }
 
                 MaterialTheme(typography = appTypography) {
@@ -111,10 +114,31 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = ScreenRoute.EditStudent
                             },
                             onStudentClick = { selected ->
-                                editingStudent = selected
-                                currentScreen = ScreenRoute.EditStudent
+                                selectedStudent = selected
+                                currentScreen = ScreenRoute.StudentDetails
                             }
                         )
+
+                        ScreenRoute.StudentDetails -> {
+                            val student = selectedStudent
+                            if (student == null) {
+                                currentScreen = ScreenRoute.Students
+                            } else {
+                                StudentDetailsScreen(
+                                    student = student,
+                                    onBackClick = { currentScreen = ScreenRoute.Students },
+                                    onEditClick = { selected ->
+                                        editingStudent = selected
+                                        currentScreen = ScreenRoute.EditStudent
+                                    },
+                                    onDeleteClick = { selected ->
+                                        studentsViewModel.deleteStudent(selected)
+                                        selectedStudent = null
+                                        currentScreen = ScreenRoute.Students
+                                    }
+                                )
+                            }
+                        }
 
                         ScreenRoute.EditStudent -> EditStudentScreen(
                             student = editingStudent,
@@ -123,6 +147,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onSave = { student ->
                                 studentsViewModel.saveStudent(student)
+                                selectedStudent = student
                                 currentScreen = ScreenRoute.Students
                             }
                         )
