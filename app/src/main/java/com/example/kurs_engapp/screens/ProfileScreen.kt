@@ -199,39 +199,3 @@ fun ProfileScreen(
         }
     }
 }
-
-internal fun copyPhotoToAppStorage(context: Context, sourceUri: Uri): Uri? {
-    return runCatching {
-        val destinationFile = java.io.File(context.filesDir, "profile_avatar.jpg")
-        context.contentResolver.openInputStream(sourceUri)?.use { input ->
-            destinationFile.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        } ?: return null
-
-        Uri.fromFile(destinationFile)
-    }.getOrNull()
-}
-
-internal fun loadAvatarBitmap(context: Context, sourceUri: Uri): Bitmap? {
-    return runCatching {
-        val decodeOptions = BitmapFactory.Options().apply {
-            inPreferredConfig = Bitmap.Config.ARGB_8888
-        }
-
-        when (sourceUri.scheme) {
-            "file" -> {
-                val filePath = sourceUri.path ?: return@runCatching null
-                FileInputStream(filePath).use { input ->
-                    BitmapFactory.decodeStream(input, null, decodeOptions)
-                }
-            }
-
-            else -> {
-                context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                    BitmapFactory.decodeStream(input, null, decodeOptions)
-                }
-            }
-        }
-    }.getOrNull()
-}
