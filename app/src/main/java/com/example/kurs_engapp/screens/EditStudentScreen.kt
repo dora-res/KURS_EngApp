@@ -53,11 +53,17 @@ import com.example.kurs_engapp.R
 import com.example.kurs_engapp.model.Student
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.ParseException
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 private val studentLevels = listOf("Нулевой", "A1", "A2", "B1", "B2", "C1", "C2", "Носитель")
 private val nameRegex = Regex("[A-Za-zА-Яа-яЁё]*")
 private val phoneRegex = Regex("[+0-9()\\- ]*")
+private const val lessonsSeparator = "|"
+private const val lessonStorageFormat = "dd.MM.yyyy HH:mm"
+private const val lessonDisplayFormat = "dd.MM, HH:mm"
 
 @Composable
 fun EditStudentScreen(
@@ -71,7 +77,9 @@ fun EditStudentScreen(
     var level by remember(student) { mutableStateOf(student?.currentLevel ?: studentLevels.first()) }
     var goal by remember(student) { mutableStateOf(student?.goal.orEmpty()) }
     var phone by remember(student) { mutableStateOf(student?.phoneNumber.orEmpty()) }
-    var lessonDateTime by remember(student) { mutableStateOf(student?.lessonDateTime.orEmpty()) }
+    var lessonDateTimes by remember(student) {
+        mutableStateOf(parseLessonValues(student?.lessonDateTime.orEmpty()))
+    }
     var avatarUri by remember(student) { mutableStateOf(student?.avatarUri) }
 
     val pickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -160,7 +168,7 @@ fun EditStudentScreen(
                 onValueChange = { if (phoneRegex.matches(it)) phone = it }
             )
             StudentField(
-                value = lessonDateTime,
+                value = lessonDateTimes.joinToString(" | ") { formatLessonForDisplay(it) },
                 hint = "Занятия",
                 readOnly = true,
                 onValueChange = {},
@@ -172,13 +180,14 @@ fun EditStudentScreen(
                             TimePickerDialog(
                                 context,
                                 { _, hourOfDay, minute ->
-                                    lessonDateTime = "%02d.%02d.%04d %02d:%02d".format(
+                                    val selectedLesson = "%02d.%02d.%04d %02d:%02d".format(
                                         dayOfMonth,
                                         month + 1,
                                         year,
                                         hourOfDay,
                                         minute
                                     )
+                                    lessonDateTimes = lessonDateTimes + selectedLesson
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -226,7 +235,7 @@ fun EditStudentScreen(
                                 currentLevel = level,
                                 goal = goal,
                                 phoneNumber = phone,
-                                lessonDateTime = lessonDateTime,
+                                lessonDateTime = lessonDateTimes.joinToString(lessonsSeparator),
                                 avatarUri = avatarUri
                             )
                         )
@@ -287,26 +296,38 @@ private fun StudentField(
     keyboardType: KeyboardType = KeyboardType.Text,
     onClick: (() -> Unit)? = null
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 10.dp)
-            .let {
-                if (onClick != null) {
-                    it.clickable(onClick = onClick)
-                } else {
-                    it
-                }
-            },
-        readOnly = readOnly,
-        singleLine = true,
-        shape = RoundedCornerShape(14.dp),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        colors = textFieldColors(),
-        placeholder = { Text(hint) }
-    )
+    val fieldModifier = Modifier
+        .fillMaxWidth()
+        .padding(bottom = 10.dp)
+
+    if (onClick != null) {
+        Box(modifier = fieldModifier.clickable(onClick = onClick)) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                colors = textFieldColors(),
+                placeholder = { Text(hint) }
+            )
+        }
+    } else {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = fieldModifier,
+            readOnly = readOnly,
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            colors = textFieldColors(),
+            placeholder = { Text(hint) }
+        )
+    }
 }
 
 @Composable
@@ -317,6 +338,29 @@ private fun textFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedBorderColor = Color.Transparent,
     focusedTextColor = Color(0xFF6A35DF),
     unfocusedTextColor = Color(0xFF6A35DF),
+    disabledTextColor = Color(0xFF6A35DF),
     focusedPlaceholderColor = Color(0xFF7D53E1),
-    unfocusedPlaceholderColor = Color(0xFF7D53E1)
+    unfocusedPlaceholderColor = Color(0xFF7D53E1),
+    disabledPlaceholderColor = Color(0xFF7D53E1),
+    disabledContainerColor = Color(0xFFA58AEF),
+    disabledBorderColor = Color.Transparent
 )
+
+private fun parseLessonValues(rawValue: String): List<String> {
+    if (rawValue.isBlank()) return emptyList()
+    return rawValue
+        .split("\n", ";", lessonsSeparator)
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+}
+
+private fun formatLessonForDisplay(rawValue: String): String {
+    val parser = SimpleDateFormat(lessonStorageFormat, Locale("ru"))
+    val formatter = SimpleDateFormat(lessonDisplayFormat, Locale("ru"))
+    return try {
+        val parsedDate = parser.parse(rawValue)
+        if (parsedDate != null) formatter.format(parsedDate) else rawValue
+    } catch (_: ParseException) {
+        rawValue
+    }
+}

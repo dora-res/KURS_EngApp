@@ -45,6 +45,14 @@ import androidx.compose.ui.unit.sp
 import com.example.kurs_engapp.model.Student
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+private const val lessonsSeparator = "|"
+private const val lessonStorageFormat = "dd.MM.yyyy HH:mm"
+private const val lessonPreviewFormat = "dd.MM, HH:mm"
+
 
 @Composable
 fun StudentsScreen(
@@ -230,8 +238,26 @@ private fun StudentCard(student: Student, onClick: () -> Unit) {
                         .background(Color(0xFF5D2BD6))
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(text = student.lessonDateTime, fontSize = 16.sp)
+                Text(text = formatLessonPreview(student.lessonDateTime), fontSize = 16.sp)
             }
         }
     }
+}
+
+private fun formatLessonPreview(lessonDateTime: String): String {
+    val parser = SimpleDateFormat(lessonStorageFormat, Locale("ru"))
+    val formatter = SimpleDateFormat(lessonPreviewFormat, Locale("ru"))
+
+    return lessonDateTime
+        .split("\n", ";", lessonsSeparator)
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .take(3).joinToString("\n") { rawValue ->
+            try {
+                val parsedDate = parser.parse(rawValue)
+                if (parsedDate != null) formatter.format(parsedDate) else rawValue
+            } catch (_: ParseException) {
+                rawValue
+            }
+        }
 }
