@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -77,99 +79,137 @@ fun StudentDetailsScreen(
                 .height(210.dp)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF7B53E1), Color.Transparent),
+                        colors = listOf(Color(0xFF4811BF), Color.Transparent),
                         startY = -180f,
                         endY = 300f
                     )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 28.dp)
-                .offset(y = (-60).dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                ),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Text(
-                text = student.firstName.ifBlank { "Имя" },
-                color = Color(0xFF4811BF),
-                fontSize = 38.sp,
-                lineHeight = 36.sp,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = student.lastName.ifBlank { "Фамилия" },
-                color = Color(0xFF4811BF),
-                fontSize = 38.sp,
-                lineHeight = 36.sp,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(178.dp)
-                    .border(
-                        width = 6.dp,
-                        brush = Brush.linearGradient(listOf(Color(0xFF5D2BD6), Color(0xFF9D81F0))),
-                        shape = CircleShape
-                    )
-                    .clip(CircleShape),
-                contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier.padding(top = 120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (avatarBitmap != null) {
-                    Image(
-                        bitmap = avatarBitmap!!.asImageBitmap(),
-                        contentDescription = "Аватар ученика",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(35.dp))
-
-            Text(text = "Уровень ${student.currentLevel}", color = Color.Black, fontSize = 30.sp, lineHeight = 30.sp)
-            Text(text = "Цель ${student.goal}", color = Color.Black, fontSize = 30.sp, lineHeight = 30.sp)
-            Text(text = student.phoneNumber, color = Color.Black, fontSize = 30.sp, lineHeight = 30.sp)
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .border(
-                        width = 4.dp,
-                        brush = Brush.linearGradient(listOf(Color(0xFF5D2BD6), Color(0xFF9D81F0))),
-                        shape = RoundedCornerShape(34.dp)
-                    ),
-                shape = RoundedCornerShape(34.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F4F4)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    lessonSchedule.forEach { lesson ->
-                        Text(text = lesson, color = Color.Black, fontSize = 27.sp, lineHeight = 32.sp)
-                    }
-                }
+                Text(
+                    text = student.firstName.ifBlank { "Имя" },
+                    color = Color(0xFF4811BF),
+                    fontSize = 38.sp,
+                    lineHeight = 36.sp,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = student.lastName.ifBlank { "Фамилия" },
+                    color = Color(0xFF4811BF),
+                    fontSize = 38.sp,
+                    lineHeight = 36.sp,
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
-        //Spacer(modifier = Modifier.weight(1f))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .size(178.dp)
+                        .border(
+                            width = 6.dp,
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF5D2BD6),
+                                    Color(0xFF9D81F0)
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                        .clip(CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (avatarBitmap != null) {
+                        Image(
+                            bitmap = avatarBitmap!!.asImageBitmap(),
+                            contentDescription = "Аватар ученика",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(35.dp))
+
+                Text(
+                    text = "Уровень ${student.currentLevel}",
+                    color = Color.Black,
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp
+                )
+                Text(
+                    text = "Цель ${student.goal}",
+                    color = Color.Black,
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp
+                )
+                Text(
+                    text = student.phoneNumber,
+                    color = Color.Black,
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .border(
+                            width = 4.dp,
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF5D2BD6),
+                                    Color(0xFF9D81F0)
+                                )
+                            ),
+                            shape = RoundedCornerShape(34.dp)
+                        ),
+                    shape = RoundedCornerShape(34.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F4F4)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        lessonSchedule.forEach { lesson ->
+                            Text(
+                                text = lesson,
+                                color = Color.Black,
+                                fontSize = 27.sp,
+                                lineHeight = 32.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+        }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(96.dp)
-                .shadow(elevation = 14.dp)
                 .background(Color(0xFF4811BF)),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
