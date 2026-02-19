@@ -162,6 +162,12 @@ fun StudentsScreen(
 @Composable
 private fun StudentCard(student: Student, onClick: () -> Unit) {
     val context = LocalContext.current
+    val fullNameParts = student.fullName.trim().split(Regex("\\s+"), limit = 2)
+    val cardName = if (fullNameParts.size == 2) {
+        "${fullNameParts[0]}\n${fullNameParts[1]}"
+    } else {
+        student.fullName
+    }
     val avatarBitmap by produceState<Bitmap?>(initialValue = null, key1 = student.avatarUri) {
         value = withContext(Dispatchers.IO) {
             student.avatarUri?.let { loadAvatarBitmap(context, Uri.parse(it)) }
@@ -208,14 +214,14 @@ private fun StudentCard(student: Student, onClick: () -> Unit) {
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = student.fullName, textAlign = TextAlign.Center, lineHeight = 18.sp)
+                Text(text = cardName, textAlign = TextAlign.Center, lineHeight = 18.sp)
             }
 
             Spacer(modifier = Modifier.size(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Уровень: ${student.currentLevel}", fontSize = 24.sp)
-                Text(text = "Цель: ${student.goal}", fontSize = 24.sp)
+                Text(text = "Уровень: ${student.currentLevel}", fontSize = 18.sp)
+                Text(text = "Цель: ${student.goal}", fontSize = 18.sp)
                 Spacer(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -224,7 +230,7 @@ private fun StudentCard(student: Student, onClick: () -> Unit) {
                         .background(Color(0xFF5D2BD6))
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(text = student.lessonDateTime, fontSize = 22.sp)
+                Text(text = student.lessonDateTime, fontSize = 16.sp)
             }
         }
     }
