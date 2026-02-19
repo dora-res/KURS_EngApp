@@ -111,12 +111,11 @@ fun EditStudentScreen(
                 )
         )
 
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Bottom
+            contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
@@ -136,7 +135,7 @@ fun EditStudentScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.size(16.dp))
+            //Spacer(modifier = Modifier.size(16.dp))
 
             Icon(
                 painter = painterResource(R.drawable.download_basic),
@@ -144,6 +143,7 @@ fun EditStudentScreen(
                 tint = Color(0xFF4811BF),
                 modifier = Modifier
                     .size(48.dp)
+                    .align(Alignment.BottomEnd)
                     .clickable { pickerLauncher.launch("image/*") }
             )
         }
