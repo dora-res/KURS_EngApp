@@ -9,19 +9,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.room.Room
 import com.example.kurs_engapp.data.AppDatabase
 import com.example.kurs_engapp.data.ProfileRepository
 import com.example.kurs_engapp.data.StudentsRepository
-import com.example.kurs_engapp.model.Student
 import com.example.kurs_engapp.screens.EditStudentScreen
 import com.example.kurs_engapp.screens.EditTutorProfileScreen
 import com.example.kurs_engapp.screens.ProfileScreen
@@ -32,15 +32,22 @@ import com.example.kurs_engapp.viewmodel.ProfileViewModelFactory
 import com.example.kurs_engapp.viewmodel.StudentsViewModel
 import com.example.kurs_engapp.viewmodel.StudentsViewModelFactory
 
-private enum class ScreenRoute {
-    Profile,
-    EditProfile,
-    Students,
-    StudentDetails,
-    EditStudent
+private object Routes {
+    const val Profile = "profile"
+    const val EditProfile = "profile/edit"
+
+    const val Students = "students"
+    const val StudentDetails = "students/{studentId}"
+    fun studentDetails(studentId: Long) = "students/$studentId"
+
+    // optional arg: studentId
+    const val EditStudent = "students/edit?studentId={studentId}"
+    fun editStudent(studentId: Long?) =
+        if (studentId == null) "students/edit" else "students/edit?studentId=$studentId"
 }
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -52,8 +59,10 @@ class MainActivity : ComponentActivity() {
         )
             .fallbackToDestructiveMigration()
             .build()
+
         val profileRepository = ProfileRepository(database.tutorProfileDao())
         val studentsRepository = StudentsRepository(database.studentDao())
+
         val gropledFontFamily = FontFamily(Font(R.font.gropled_bold))
         val appTypography = Typography().run {
             Typography(
@@ -83,74 +92,94 @@ class MainActivity : ComponentActivity() {
                 val studentsViewModel: StudentsViewModel = viewModel(
                     factory = StudentsViewModelFactory(studentsRepository)
                 )
+
                 val profile by profileViewModel.profile.collectAsState()
                 val students by studentsViewModel.students.collectAsState()
-                var currentScreen by rememberSaveable { mutableStateOf(ScreenRoute.Profile) }
-                var selectedStudent by remember { mutableStateOf<Student?>(null) }
-                var editingStudent by remember { mutableStateOf<Student?>(null) }
+
+                val navController = rememberNavController()
 
                 MaterialTheme(typography = appTypography) {
-                    when (currentScreen) {
-                        ScreenRoute.Profile -> ProfileScreen(
-                            profile = profile,
-                            onEditClick = { currentScreen = ScreenRoute.EditProfile },
-                            onStudentsClick = { currentScreen = ScreenRoute.Students }
-                        )
+                    NavHost(
+                        navController = navController,
+                        startDestination = Routes.Profile
+                    ) {
+                        composable(Routes.Profile) {
+                            ProfileScreen(
+                                profile = profile,
+                                onEditClick = { navController.navigate(Routes.EditProfile) },
+                                onStudentsClick = { navController.navigate(Routes.Students) }
+                            )
+                        }
 
-                        ScreenRoute.EditProfile -> EditTutorProfileScreen(
-                            profile = profile,
-                            onCancel = { currentScreen = ScreenRoute.Profile },
-                            onSave = { updatedProfile ->
-                                profileViewModel.saveProfile(updatedProfile)
-                                currentScreen = ScreenRoute.Profile
-                            }
-                        )
+                        composable(Routes.EditProfile) {
+                            EditTutorProfileScreen(
+                                profile = profile,
+                                onCancel = { navController.popBackStack() },
+                                onSave = { updated ->
+                                    profileViewModel.saveProfile(updated)
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
 
-                        ScreenRoute.Students -> StudentsScreen(
-                            students = students,
-                            onProfileClick = { currentScreen = ScreenRoute.Profile },
-                            onAddStudentClick = {
-                                editingStudent = null
-                                currentScreen = ScreenRoute.EditStudent
-                            },
-                            onStudentClick = { selected ->
-                                selectedStudent = selected
-                                currentScreen = ScreenRoute.StudentDetails
-                            }
-                        )
+                        composable(Routes.Students) {
+                            StudentsScreen(
+                                students = students,
+                                onProfileClick = { navController.popBackStack() }, // назад на profile
+                                onAddStudentClick = { navController.navigate(Routes.editStudent(null)) },
+                                onStudentClick = { selected ->
+                                    navController.navigate(Routes.studentDetails(selected.id))
+                                }
+                            )
+                        }
 
-                        ScreenRoute.StudentDetails -> {
-                            val student = selectedStudent
+                        composable(
+                            route = Routes.StudentDetails,
+                            arguments = listOf(
+                                navArgument("studentId") { type = NavType.LongType }
+                            )
+                        ) { backStackEntry ->
+                            val studentId = backStackEntry.arguments?.getLong("studentId") ?: 0L
+                            val student = students.firstOrNull { it.id == studentId }
+
                             if (student == null) {
-                                currentScreen = ScreenRoute.Students
+                                // если не нашли (например, удалили) — просто возвращаемся к списку
+                                navController.popBackStack(Routes.Students, inclusive = false)
                             } else {
                                 StudentDetailsScreen(
                                     student = student,
-                                    onBackClick = { currentScreen = ScreenRoute.Students },
-                                    onEditClick = { selected ->
-                                        editingStudent = selected
-                                        currentScreen = ScreenRoute.EditStudent
-                                    },
-                                    onDeleteClick = { selected ->
-                                        studentsViewModel.deleteStudent(selected)
-                                        selectedStudent = null
-                                        currentScreen = ScreenRoute.Students
+                                    onBackClick = { navController.popBackStack() },
+                                    onEditClick = { navController.navigate(Routes.editStudent(student.id)) },
+                                    onDeleteClick = { toDelete ->
+                                        studentsViewModel.deleteStudent(toDelete)
+                                        navController.popBackStack(Routes.Students, inclusive = false)
                                     }
                                 )
                             }
                         }
 
-                        ScreenRoute.EditStudent -> EditStudentScreen(
-                            student = editingStudent,
-                            onCancel = {
-                                currentScreen = ScreenRoute.Students
-                            },
-                            onSave = { student ->
-                                studentsViewModel.saveStudent(student)
-                                selectedStudent = student
-                                currentScreen = ScreenRoute.Students
-                            }
-                        )
+                        composable(
+                            route = Routes.EditStudent,
+                            arguments = listOf(
+                                navArgument("studentId") {
+                                    type = NavType.LongType
+                                    defaultValue = 0L
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val studentId = backStackEntry.arguments?.getLong("studentId") ?: 0L
+                            val editingStudent = students.firstOrNull { it.id == studentId }
+
+                            EditStudentScreen(
+                                student = editingStudent, // null -> добавление
+                                onCancel = { navController.popBackStack() },
+                                onSave = { student ->
+                                    studentsViewModel.saveStudent(student)
+                                    // после сохранения возвращаемся к списку
+                                    navController.popBackStack(Routes.Students, inclusive = false)
+                                }
+                            )
+                        }
                     }
                 }
             }
