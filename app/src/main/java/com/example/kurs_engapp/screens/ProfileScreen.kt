@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kurs_engapp.R
 import com.example.kurs_engapp.model.TutorProfile
 import kotlinx.coroutines.Dispatchers
+import com.example.kurs_engapp.utils.formatExperienceLabel
 import kotlinx.coroutines.withContext
 import java.io.FileInputStream
 
@@ -157,7 +158,7 @@ fun ProfileScreen(
             ) {
                 Text(text = profile.subject, fontSize = 20.sp, modifier = Modifier.fillMaxWidth())
                 Text(
-                    text = "Стаж ${profile.experience} лет",
+                    text = formatExperienceLabel(profile.experience),
                     fontSize = 20.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
